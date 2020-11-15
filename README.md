@@ -3,6 +3,10 @@
 A python CLI to summarize and visualize the number of question marks
 of a given Whatsapp chat history.
 
+### requirements:
+
+- python 3.6
+
 ### how to use:
 
 - export the whatsapp chat as .txt file.
