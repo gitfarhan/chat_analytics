@@ -7,5 +7,5 @@ of a given Whatsapp chat history.
 
 - export the whatsapp chat as .txt file.
 - clone or download this repo.
-- install the dependencies using pip `pip install -r requirements`.
+- install the dependencies using pip `pip install -r requirements.txt`.
 - run `python chat_analytics.py -f <path_to_chat_history.txt>`.
