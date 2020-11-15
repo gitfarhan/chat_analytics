@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import click
 
-class ChatParsing:
+class ChatAnalytics:
 
     __is_ios = False
 
@@ -84,10 +84,13 @@ class ChatParsing:
 
         qmarks_counter = qmarks_counter[qmarks_counter.date.str.split('/').str.len() >= 3]
 
-        if self.__is_ios:
-            qmarks_counter.date = pd.to_datetime(qmarks_counter.date, format="%d/%m/%y")
-        else:
-            qmarks_counter.date = pd.to_datetime(qmarks_counter.date, format="%d/%m/%Y")
+        try:
+            if self.__is_ios:
+                qmarks_counter.date = pd.to_datetime(qmarks_counter.date, format="%d/%m/%y")
+            else:
+                qmarks_counter.date = pd.to_datetime(qmarks_counter.date, format="%d/%m/%Y")
+        except Exception as e:
+            print(f"faield to covert to datetime format: {e}")
 
         qmarks_counter = qmarks_counter.sort_values(by='date')
 
@@ -107,7 +110,7 @@ class ChatParsing:
 @click.command()
 @click.option('--filepath', '-f')
 def main(filepath):
-    chat = ChatParsing(chat_path=filepath)
+    chat = ChatAnalytics(chat_path=filepath)
     chat.run()
 
 if __name__ == '__main__':
