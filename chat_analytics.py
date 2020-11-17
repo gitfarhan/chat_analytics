@@ -96,15 +96,21 @@ class ChatAnalytics:
 
 
         # visualize
-        plt.figure("Chat Analytics")
+
+        # plot size
+        plt.rcParams["figure.figsize"] = (15, 5)
+
+        fig = plt.figure("Chat Analytics")
         df = qmarks_counter.pivot(index='date', columns='sender', values='total')
         df = df.fillna(0)
-
+        spearman_corr = round(df.iloc[:,[0, 1]].corr('spearman').iloc[:, 0][1], 2)
         df.iloc[:,0].plot(grid=True, label=df.iloc[:,0].name, legend=True)
         df.iloc[:,1].plot(grid=True, label=df.iloc[:,1].name, legend=True)
 
+
         plt.title('? counter')
         plt.ylabel('? count')
+        fig.text(.8, .9, f"spearman corr: {spearman_corr}", ha='left')
         plt.show()
 
 @click.command()
