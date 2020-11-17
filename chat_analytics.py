@@ -1,14 +1,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import click
+from text_mining import TextCleaner
 
 class ChatAnalytics:
 
     __is_ios = False
 
-    def __init__(self, chat_path, exported_filename='clean_chat.csv'):
+    def __init__(self, chat_path):
         self.chat_path = chat_path
-        self.exported_filename = exported_filename
         with open(self.chat_path, 'r', encoding='utf-8') as h:
             self.__history = h.read()
 
@@ -76,6 +76,31 @@ class ChatAnalytics:
 
     def run(self):
         chat_df = self.__to_pandas()
+        chat_df = chat_df[~chat_df.text.str.contains('are end-to-end')]
+        senders = list(chat_df.sender.unique())
+        sender_1 = senders[0]
+        sender_2 = senders[1]
+        
+        sender_1_df = chat_df[chat_df.sender == sender_1]
+        sender_2_df = chat_df[chat_df.sender == sender_2]
+        
+        sender_1_text = " ".join(list(sender_1_df.text))
+        sender_2_text = " ".join(list(sender_2_df.text))
+        
+
+        cleaner = TextCleaner()
+        
+        sender_1_wordcount_df = cleaner.get_clean_text(text=sender_1_text)
+        sender_1_wordcount_df = sender_1_wordcount_df[sender_1_wordcount_df.word != 'omitted']
+        sender_1_wordcount_df = sender_1_wordcount_df[sender_1_wordcount_df['count'] > 2]
+        sender_1_wordcount_df = sender_1_wordcount_df.head(20)
+        
+        
+        sender_2_wordcount_df = cleaner.get_clean_text(text=sender_2_text)
+        sender_2_wordcount_df = sender_2_wordcount_df[sender_2_wordcount_df.word != 'omitted']
+        sender_2_wordcount_df = sender_2_wordcount_df[sender_2_wordcount_df['count'] > 2]
+        sender_2_wordcount_df = sender_2_wordcount_df.head(20)
+        
 
         chat_df['?'] = chat_df['text'].str.contains("""[?]""").astype(int)
         qmarks_counter = chat_df.groupby(['date', 'sender'])['?'].sum()\
@@ -96,21 +121,44 @@ class ChatAnalytics:
 
 
         # visualize
-
+        
+        
         # plot size
-        plt.rcParams["figure.figsize"] = (15, 5)
+        # plt.rcParams["figure.figsize"] = (15, 5)
 
         fig = plt.figure("Chat Analytics")
+        
+        
+        ax_word_count_sender_1 = fig.add_axes((0.3, 0.08, 0.15, 0.8))
+        ax_word_count_sender_2 = fig.add_axes((0.08, 0.08, 0.15, 0.8))
+        ax_counter = fig.add_axes((0.52, 0.17, 0.45, 0.45))
+        
         df = qmarks_counter.pivot(index='date', columns='sender', values='total')
         df = df.fillna(0)
-        spearman_corr = round(df.iloc[:,[0, 1]].corr('spearman').iloc[:, 0][1], 2)
-        df.iloc[:,0].plot(grid=True, label=df.iloc[:,0].name, legend=True)
-        df.iloc[:,1].plot(grid=True, label=df.iloc[:,1].name, legend=True)
 
+        spearman_corr = round(df.iloc[:,[0, 1]].corr('spearman').iloc[:, 0][1], 2)
+        df.iloc[:,0].plot(grid=True, label=df.iloc[:,0].name, legend=True, ax=ax_counter, figsize=(15, 7))
+        df.iloc[:,1].plot(grid=True, label=df.iloc[:,1].name, legend=True, ax=ax_counter, figsize=(15, 7))
+        
+        sender_1_wordcount_df.sort_values(by='count').plot.barh(x='word', 
+                                                                y='count', 
+                                                                ax=ax_word_count_sender_1,
+                                                                legend=False,
+                                                                color='#ff7f0e',
+                                                                xlabel='',
+                                                                title=sender_1)
+        
+        sender_2_wordcount_df.sort_values(by='count').plot.barh(x='word',
+                                                                y='count',
+                                                                ax=ax_word_count_sender_2,
+                                                                color='#1f77b4',
+                                                                legend=False,
+                                                                xlabel='',
+                                                                title=sender_2)
 
         plt.title('? counter')
         plt.ylabel('? count')
-        fig.text(.8, .9, f"spearman corr: {spearman_corr}", ha='left')
+        fig.text(.85, .63, f"spearman corr: {spearman_corr}", ha='left')
         plt.show()
 
 @click.command()
