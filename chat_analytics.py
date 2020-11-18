@@ -40,39 +40,50 @@ class ChatAnalytics:
             # ios
             if self.__is_ios:
 
-                chat = i[16:]
-                coord = chat.find(':')
-                time_close_coord = chat.find(']')
 
-                date = i[1:9].strip()
-                time = i[9:15].strip()
+                coord = i.find(':')
+                close_bracket = i.find(']')
+                open_bracket = i.find('[')
+                chat = i[close_bracket+1:]
 
-                if coord > 0:
-                    sender = chat[time_close_coord+1:coord].strip()
-                    text = chat[(coord + 1):].strip()
-                    chat_item = dict(
-                        date=date,
-                        time=time,
-                        sender=sender,
-                        text=text
-                    )
-                    chat_dict.append(chat_item)
+                if coord > 0 and 'image omitted' not in chat:
+
+                    sender = chat.split(":")[0].strip()
+                    time_chat = i[open_bracket + 1:close_bracket]
+                    date = time_chat.split()[0]
+
+                    text = " ".join(chat.split(":")[1:]).strip()
+                    if len(time_chat.split()) < 5 and len(date) >= 8:
+                        chat_item = dict(
+                            date=date,
+                            time=time_chat.split()[1] if len(time_chat.split()) < 3 else f"{time_chat.split()[1]} {time_chat.split()[2]}",
+                            sender=sender,
+                            text=text
+                        )
+
+                        chat_dict.append(chat_item)
                     
             else:
-                date = i.split(',')[0]
-                time = i[9:15].strip()
-                chat = i[16:]
-                coord = chat.find(':')
-                if coord > 0:
-                    sender = chat[1:coord].strip()
-                    text = chat[(coord + 1):].strip()
-                    chat_item = dict(
-                        date=date,
-                        time=time,
-                        sender=sender,
-                        text=text
-                    )
-                    chat_dict.append(chat_item)
+
+
+                coord = i.find(':')
+                if coord > 0 and 'image omitted' not in i:
+
+                    chat = i[i.find("-")+1:]
+                    time_chat = i.split("-")[0].replace(",", "")
+                    date = time_chat.split()[0]
+                    sender = chat[:chat.find(":")].strip()
+                    text = chat[chat.find(":")+1:].strip()
+                    if len(time_chat.split()) < 5 and len(date) >= 8:
+                        chat_item = dict(
+                            date=date,
+                            time=time_chat.split()[1] if len(
+                                time_chat.split()) < 3 else f"{time_chat.split()[1]} {time_chat.split()[2]}",
+                            sender=sender,
+                            text=text
+                        )
+
+                        chat_dict.append(chat_item)
 
         chat_df = pd.DataFrame(chat_dict)
 
@@ -94,9 +105,9 @@ class ChatAnalytics:
         sender_2_text = " ".join(list(sender_2_df.text))
 
         if self.__is_ios:
-            chat_df['CHAT_HOUR'] = chat_df['time'].apply(lambda x: str(x).split(".")[0])
+            chat_df['CHAT_HOUR'] = chat_df['time'].apply(lambda x: f'{int(str(x).split(".")[0]):02d}' if len(x.split()) == 1 else f'{int(str(x).split(".")[0]):02d} {x.split()[1]}')
         else:
-            chat_df['CHAT_HOUR'] = chat_df['time'].apply(lambda x: str(x).split(":")[0])
+            chat_df['CHAT_HOUR'] = chat_df['time'].apply(lambda x: f'{int(str(x).split(".")[0]):02d}' if len(x.split()) == 1 else f'{int(str(x).split(":")[0]):02d} {x.split()[1]}')
 
 
 
@@ -160,16 +171,22 @@ class ChatAnalytics:
         fig = plt.figure("Chat Analytics")
         
         # axes
+
+        # ax word count
         ax_word_count_sender_1 = fig.add_axes((0.3, 0.08, 0.15, 0.4))
         ax_word_count_sender_2 = fig.add_axes((0.08, 0.08, 0.15, 0.4))
+
+        # ax qmarks
         ax_qmarks = fig.add_axes((0.52, 0.15, 0.45, 0.3))
         ax_qmarks.set_title('? Counter')
         ax_qmarks.set_ylabel('total ?')
 
+        # ax prime time
         ax_prime_time = fig.add_axes((0.07, 0.63, 0.38, 0.25))
         ax_prime_time.set_title('Prime Time')
         ax_prime_time.set_ylabel('total words')
 
+        # ax total words
         ax_total_words = fig.add_axes((0.52, 0.58, 0.45, 0.3))
         ax_total_words.tick_params(
                         axis='x',          # changes apply to the x-axis
@@ -212,14 +229,18 @@ class ChatAnalytics:
                                                          label=sender_1,
                                                          figsize=(15, 7),
                                                          legend=False,
-                                                         ax=ax_prime_time)
+                                                         ax=ax_prime_time,
+                                                         width=.35,
+                                                         grid=True)
         total_words_by_hour_sender_2['total_words'].plot(kind='bar',
                                                          position=0,
                                                          color='#1f77b4',
                                                          label=sender_2,
                                                          figsize=(15, 7),
                                                          legend=False,
-                                                         ax=ax_prime_time)
+                                                         ax=ax_prime_time,
+                                                         width=.35,
+                                                         grid=True)
 
         
         # word count
