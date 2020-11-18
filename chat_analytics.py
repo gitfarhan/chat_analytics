@@ -104,10 +104,22 @@ class ChatAnalytics:
         sender_1_text = " ".join(list(sender_1_df.text))
         sender_2_text = " ".join(list(sender_2_df.text))
 
+        is_12_format = chat_df[(chat_df.time.str.contains('AM')) | chat_df.time.str.contains('PM')].shape[0] > 0
         if self.__is_ios:
-            chat_df['CHAT_HOUR'] = chat_df['time'].apply(lambda x: f'{int(str(x).split(".")[0]):02d}' if len(x.split()) == 1 else f'{int(str(x).split(".")[0]):02d} {x.split()[1]}')
+
+
+            format_hour = "%H.%M.%S" if not is_12_format else "%I.%M.%S %p"
+
+            chat_df['CHAT_HOUR'] = pd.to_datetime(chat_df['time'], format=format_hour)
+            chat_df['CHAT_HOUR'] = chat_df.CHAT_HOUR.apply(lambda x: f"{x.hour:02d}")
+
         else:
-            chat_df['CHAT_HOUR'] = chat_df['time'].apply(lambda x: f'{int(str(x).split(".")[0]):02d}' if len(x.split()) == 1 else f'{int(str(x).split(":")[0]):02d} {x.split()[1]}')
+            format_hour = "%H:%M" if not is_12_format else "%I:%M %p"
+            chat_df['CHAT_HOUR'] = pd.to_datetime(chat_df['time'], format=format_hour)
+            chat_df['CHAT_HOUR'] = chat_df.CHAT_HOUR.apply(lambda x: f"{x.hour:02d}")
+
+
+
 
 
 
@@ -228,7 +240,7 @@ class ChatAnalytics:
                                                          color='#ff7f0e',
                                                          label=sender_1,
                                                          figsize=(15, 7),
-                                                         legend=False,
+                                                         legend=True,
                                                          ax=ax_prime_time,
                                                          width=.35,
                                                          grid=True)
@@ -237,7 +249,7 @@ class ChatAnalytics:
                                                          color='#1f77b4',
                                                          label=sender_2,
                                                          figsize=(15, 7),
-                                                         legend=False,
+                                                         legend=True,
                                                          ax=ax_prime_time,
                                                          width=.35,
                                                          grid=True)
